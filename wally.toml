@@ -1,0 +1,11 @@
+[package]
+name = "frosty/vehicle-chassis"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+graphmodule = "boatbomber/graphmodule@1.0.0"
+plasma = "evaera/plasma@0.4.2"
+octo-tree = "sleitnick/octo-tree@0.3.1"
+fusion = "elttob/fusion@0.2.0"

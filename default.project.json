@@ -1,0 +1,54 @@
+{
+	"name": "vehicle-chassis",
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"shared": {
+				"$path": "src/shared/replicated"
+			},
+			"packages": {
+				"$path": "Packages"
+			}
+		},
+		"ServerScriptService": {
+			"server": {
+				"$path": "src/server"
+			}
+		},
+		"ServerStorage": {
+			"shared": {
+				"$path": "src/shared/server"
+			}
+		},
+		"StarterPlayer": {
+			"StarterPlayerScripts": {
+				"client": {
+					"$path": "src/client"
+				}
+			}
+		},
+		"Workspace": {
+			"$properties": {
+				"FilteringEnabled": true
+			}
+		},
+		"Lighting": {
+			"$properties": {
+				"Ambient": [
+					0,
+					0,
+					0
+				],
+				"Brightness": 2,
+				"GlobalShadows": true,
+				"Outlines": false,
+				"Technology": "Voxel"
+			}
+		},
+		"SoundService": {
+			"$properties": {
+				"RespectFilteringEnabled": true
+			}
+		}
+	}
+}
