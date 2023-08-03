@@ -5,8 +5,11 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local replicatedShared = ReplicatedStorage:WaitForChild("shared")
 local chassis = require(replicatedShared:WaitForChild("chassis"))
 local types = require(replicatedShared.chassis.types)
+local Force = require(replicatedShared.chassis.force)
 
 --
+
+local handledForces: { [Model]: Force.Force } = {}
 
 type ChassisProto = {
 	vehicle: Model,
@@ -62,9 +65,15 @@ function Chassis.new(vehicle: Model): Chassis
 	} :: ChassisProto, Chassis)
 
 	self:weldBody()
-	self:createConstraints()
 	self:createFlip()
 	self:createEnterPrompt()
+
+	if config.useConstraints then
+		self:createConstraints()
+	else
+		handledForces[vehicle] = Force.new(wheels, base)
+	end
+
 	-- base.Anchored = true
 
 	seat:GetPropertyChangedSignal("Occupant"):Connect(function()
@@ -79,7 +88,7 @@ function Chassis.new(vehicle: Model): Chassis
 		self.destroy()
 	end)
 
-	base.Anchored = false
+	-- base.Anchored = false
 
 	return self
 end
@@ -232,5 +241,14 @@ local function handleEnterPrompt(prompt: ProximityPrompt, player: Player)
 end
 
 ProximityPromptService.PromptTriggered:Connect(handleEnterPrompt)
+
+task.spawn(function()
+	while true do
+		local dt = task.wait()
+		for _, force in handledForces do
+			force:step(dt)
+		end
+	end
+end)
 
 return Chassis

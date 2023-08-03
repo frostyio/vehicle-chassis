@@ -107,4 +107,6 @@ return {
 		"tachometer",
 		-- "slippageAccessories"
 	},
+
+	useConstraints = false,
 } :: types.VehicleConfig

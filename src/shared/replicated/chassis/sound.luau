@@ -28,19 +28,6 @@ function SoundPanel.new(root: Instance, config: types.VehicleConfig): SoundPanel
 		standardVolume = config.standardVolume or 0.9,
 	} :: SoundProto, SoundPanel)
 
-	-- blending zones
-	local numberOfSounds = #self.sounds
-	local peakRPM = config.peakRPM
-
-	local rpmZone = peakRPM / numberOfSounds
-
-	local zones = {}
-	for i = 1, numberOfSounds do
-		table.insert(zones, (i - 1) * rpmZone)
-	end
-
-	self.rpmZones = zones
-
 	--
 
 	self:loadEngineSounds()

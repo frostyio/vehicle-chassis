@@ -88,6 +88,8 @@ export type VehicleConfig = {
 	springs: { [string]: Spring },
 	cylindrical: { [string]: Cylindrical },
 
+	useConstraints: boolean?,
+
 	plugins: { string }?,
 }
 

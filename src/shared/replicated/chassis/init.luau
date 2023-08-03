@@ -7,6 +7,8 @@ local util = require(script:WaitForChild("util"))
 local types = require(script:WaitForChild("types"))
 local Debug = require(script:WaitForChild("debug"))
 local Sound = require(script:WaitForChild("sound"))
+local Force = require(script:WaitForChild("force"))
+
 local plugins = script:WaitForChild("plugins")
 
 local random = Random.new()
