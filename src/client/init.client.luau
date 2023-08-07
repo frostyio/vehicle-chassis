@@ -1,32 +1,36 @@
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+--- remotes
+local remotes = ReplicatedStorage:WaitForChild("remotes")
+local ownershipRemote: RemoteEvent = remotes:WaitForChild("ownership")
+local occupantRemote: RemoteEvent = remotes:WaitForChild("occupant")
+
+--- chassis
 local shared = ReplicatedStorage:WaitForChild("shared")
-local Chassis = require(shared:WaitForChild("chassis"))
+local chassisFolder = shared:WaitForChild("chassis")
+local Chassis = require(chassisFolder:WaitForChild("client"))
+local configs = chassisFolder:WaitForChild("configs")
+local defaultConfig = require(configs:WaitForChild("default"))
 
-local Client = Players.LocalPlayer
+--
 
-local currentChassis: Chassis.Chassis? = nil
+local handledChassis: { [Instance]: Chassis.Chassis } = {}
 
-local function CharacterAdded(character: Model)
-	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+local function handleOwnership(vehicle: Instance, isOwner: boolean)
+	if isOwner then
+		handledChassis[vehicle] = Chassis.new(vehicle, defaultConfig)
+	elseif handledChassis[vehicle] then
+		handledChassis[vehicle]:Destroy()
+		handledChassis[vehicle] = nil
+	end
+end
+ownershipRemote.OnClientEvent:Connect(handleOwnership)
 
-	humanoid.Seated:Connect(function(active, seat)
-		if active == false then
-			if currentChassis ~= nil then
-				currentChassis:destroy()
-			end
+local function handleOccupancy(vehicle: Instance, doOccupation: boolean)
+	local chassis = handledChassis[vehicle]
+	assert(chassis, "chassis not found")
 
-			return
-		end
-
-		local vehicle = seat:FindFirstAncestorWhichIsA("Model")
-		if not vehicle:GetAttribute("isVehicle") then
-			return
-		end
-
-		currentChassis = Chassis.initialize(vehicle)
-	end)
+	chassis:occupantChanged(doOccupation)
 end
 
-Client.CharacterAdded:Connect(CharacterAdded)
+occupantRemote.OnClientEvent:Connect(handleOccupancy)

@@ -11,14 +11,12 @@ local New = Fusion.New
 local Children = Fusion.Children
 local Value = Fusion.Value
 
-local Chassis = require(script.Parent.Parent) -- oo spooky cyclic
-local types = require(script.Parent.Parent:WaitForChild("types"))
-
 local UI = require(script.ui)
 
-type PluginProto = {
-	chassis: Chassis.Chassis,
+local types = require(script.Parent.Parent.types)
 
+type PluginProto = {
+	state: types.State,
 	ui: ScreenGui,
 	props: UI.TachometerProps,
 }
@@ -27,11 +25,11 @@ local plugin = {}
 plugin.__index = plugin
 type plugin = typeof(plugin) & PluginProto
 
-function plugin.new(chassis: Chassis.Chassis): plugin
-	local config = chassis.config
+function plugin.new(state: types.State, chassis: any): plugin
+	local config = chassis:getComponent("engine").config
 
 	local props: UI.TachometerProps = {
-		peakRPM = config.peakRPM + (config.autoUpBias * 2),
+		peakRPM = config.peakRPM - 1000,
 		redlineRPM = config.redlineRPM,
 
 		currentGear = Value("P"),
@@ -50,7 +48,7 @@ function plugin.new(chassis: Chassis.Chassis): plugin
 	})
 
 	local self = setmetatable({
-		chassis = chassis,
+		state = state,
 		props = props,
 		ui = ui,
 	} :: PluginProto, plugin)
@@ -58,24 +56,21 @@ function plugin.new(chassis: Chassis.Chassis): plugin
 	return self
 end
 
-function plugin.step(self: plugin, state: types.ChassisState, _dt: number)
+function plugin.step(self: plugin, state: types.State, _dt: number)
 	local props = self.props
+	local drivetrain, engine = state.drivetrain, state.engine
 
-	local vehicleState = state.vehicleState
-	local betterGear = if vehicleState == "Forward"
-		then tostring(state.gear)
-		elseif vehicleState == "Reversing" then "R"
-		elseif vehicleState == "Neutral" then "P"
-		else tostring(state.gear)
+	local gear = drivetrain.currentGear
+	local betterGear = if gear == 0 then "N" elseif gear == -1 then "R" else tostring(gear)
 
 	props.currentGear:set(betterGear)
-	props.currentRPM:set(math.floor(state.rpm))
-	props.currentSpeed:set(state.speed)
-	props.absActive:set(state.isABSActive)
-	props.tcsActive:set(state.isTCSActive)
+	props.currentRPM:set(math.floor(engine.currentRPM))
+	props.currentSpeed:set(math.floor(state.speed))
+	-- props.absActive:set(state.isABSActive)
+	-- props.tcsActive:set(state.isTCSActive)
 end
 
-function plugin.destroy(self: plugin)
+function plugin.Destroy(self: plugin)
 	self.ui:Destroy()
 end
 

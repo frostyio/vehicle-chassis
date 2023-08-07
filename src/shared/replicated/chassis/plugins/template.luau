@@ -1,23 +1,17 @@
-local Chassis = require(script.Parent.Parent) -- oo spooky cyclic
-local types = require(script.Parent.Parent:WaitForChild("types"))
+local types = require(script.Parent.Parent.types)
 
-type PluginProto = {
-	chassis: Chassis.Chassis,
-	destroyed: boolean,
-}
+export type Config = {}
 
-local plugin = {}
-plugin.__index = plugin
-type plugin = typeof(plugin) & PluginProto
+type TemplateProto = { state: types.State }
 
-function plugin.new(chassis: Chassis.Chassis): plugin
-	local self = setmetatable({ chassis = chassis, destroyed = false } :: PluginProto, plugin)
+local Template = {}
+Template.__index = Template
+type Template = typeof(Template) & TemplateProto
 
-	return self
+function Template.new(state: types.State): Template
+	return setmetatable({ state = state } :: Template, Template)
 end
+function Template.step(_self: Template, _state: types.State, _dt: number) end
+function Template.Destroy(_self: Template) end
 
-function plugin.step(_self: plugin, _state: types.ChassisState, _dt: number) end
-
-function plugin.destroy(_self: plugin) end
-
-return plugin
+return Template

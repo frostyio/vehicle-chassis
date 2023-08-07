@@ -1,82 +1,120 @@
-local chassis = script.Parent.Parent
-local types = require(chassis:WaitForChild("types"))
+local types = require(script.Parent.Parent.types)
 
-local frontSpring: types.Spring = { stiffness = 16_000, damping = 1000, freeLength = 2.3 }
-local backSpring: types.Spring = { stiffness = 16_000, damping = 5000, freeLength = 2.3 }
-local frontCylindrical: types.Cylindrical = { lowerLimit = -1, upperLimit = -0.2 }
-local backCylindrical: types.Cylindrical =
-	{ lowerLimit = -1, upperLimit = -0.2, angularActuator = Enum.ActuatorType.Motor }
+local components = script.Parent.Parent.components
+local Input = require(components:WaitForChild("input"))
+local Engine = require(components:WaitForChild("engine"))
+local DriveTrain = require(components:WaitForChild("drivetrain"))
+local Steering = require(components:WaitForChild("steer"))
+
+local defaultWheel: types.WheelConfig = {
+	---- friction coefficients [0, 1]
+	--- u_k = 0 == no kinetic grip, 1 == max kinetic grip
+	--- u_s = 0 == no static friction, 1 == max static friction
+	grip_u_k = 1, -- lower = more slip, higher = less slip
+	grip_u_s = 2,
+	rolling_u_k = 0.03, -- lower = less rolling resistence, higher = more rolling resistance
+	rolling_u_s = 0,
+
+	----
+	wheelRadius = 2.72 / 2,
+	wheelMass = 100, -- lower = more slip, higher = less slip
+
+	springStiffness = 1.7,
+	springDamper = 12,
+	restSuspension = 2.4,
+	maxSuspension = 3.5,
+}
 
 return {
-	torqueCurve = {
-		-- ["rpm", "torque"]
-		{ 0, 0 },
-		{ 500, 165 },
-		{ 1000, 295 },
-		{ 2000, 396 },
-		{ 3000, 435 },
-		{ 4000, 395 },
-		{ 5000, 338 },
-		{ 6000, 257 },
-		{ 8000, 85 },
-	},
-	idleRPM = 500,
-	peakRPM = 7000,
-	redlineRPM = 8000,
-	redlineKickback = 1000,
-
-	rpmAccel = 150,
-	rpmDecay = 75,
-	clutchEngangmentRate = 0.9,
-
-	transmissionMode = "Manuel",
-	autoUpBias = -300,
-	autoDownBias = 1300,
-
-	idleThrottle = 15 / 100,
-
-	frontBreakForce = 20_000,
-	rearBreakForce = 15_000,
-	parkingBreakForce = 40_000,
-
-	tcsThreshold = 15,
-	tcsGradient = 1,
-	tcsLimit = 10 / 100, -- minimum 10%
-
-	absThreshold = 10,
-
-	maxAngularAcceleration = 100000,
-
-	gearRatios = {
-		4.056,
-		2.301,
-		1.595,
-		1.248,
+	---- physics
+	wheels = {
+		FL = defaultWheel,
+		FR = defaultWheel,
+		RL = defaultWheel,
+		RR = defaultWheel,
 	},
 
-	turnRadius = 20,
-	turnSpeed = 3,
-	turnForgiveness = 100,
+	-- 0 - 1
+	dragCoefficient = 0.2,
+	downforceCoefficient = 1,
+	lateralCoefficient = 0.1,
 
-	springs = {
-		BL = backSpring,
-		BR = backSpring,
-		FL = frontSpring,
-		FR = frontSpring,
+	{ "input", Input, config = {} :: Input.Config },
+	{
+		"engine",
+		Engine,
+		config = {
+			idleRPM = 1000,
+			peakRPM = 7000,
+			redlineRPM = 9000,
+			redlineKickback = 1000,
+
+			rpmAccel = 60,
+			rpmDecay = 15,
+
+			idleThrottle = 0.05,
+
+			torqueCurve = {
+				-- rpm, torque
+				{ 0, 0 },
+				{ 1000, 205 },
+				{ 1500, 310 },
+				{ 2000, 360 },
+				{ 2500, 400 },
+				{ 3000, 425 },
+				{ 3500, 430 },
+				{ 4000, 445 },
+				{ 4500, 455 },
+				{ 5000, 460 },
+				{ 6500, 460 },
+				{ 7000, 450 },
+				{ 7500, 425 },
+				{ 8000, 400 },
+				{ 9000, 350 },
+			},
+		} :: Engine.Config,
 	},
-	cylindrical = {
-		BL = backCylindrical,
-		BR = backCylindrical,
-		FL = frontCylindrical,
-		FR = frontCylindrical,
+	{
+		"drivetrain",
+		DriveTrain,
+		config = {
+			wheels = { "FL", "FR" },
+			gearRatios = {
+				3.75,
+				2.38,
+				2.1,
+				1.72,
+				1.46,
+				1.3,
+			},
+			finalDriveRatio = 4.09,
+			reverseRatio = 4,
+			clutchEngagementRate = 0.9,
+
+			transmissionMode = "Semi",
+			shiftTime = 0.2,
+		} :: DriveTrain.Config,
 	},
+	{
+		"steering",
+		Steering,
+		config = { wheels = { "FL", "FR" }, turnForgiveness = 50, turnSpeed = 1.5, turnRadius = 15 } :: Steering.Config,
+	},
+
+	---- plugins
+	"debug",
+	"tachometer",
+	"sound",
+	----
 
 	engineSounds = {
-		idle = "xedos_idle",
-		{ name = "xedos_idle", pitch = { min = 0.7, max = 1 }, speed = { min = 0.5, max = 1.2 } },
-		{ name = "xedos_mid", pitch = { min = 0.7, max = 1 }, speed = { min = 0.5, max = 1.2 } },
-		{ name = "xedos_high", pitch = { min = 0.7, max = 1 }, speed = { min = 0.5, max = 1.2 } },
+		-- idle = "coupe_idle",
+		crank = { name = "coupe_crank", pitch = { min = 0.8, max = 0.8 }, volume = 0.2 },
+		idle = "Carrera_S_idle",
+		{ name = "Carrera_S_idle" },
+		{ name = "Carrera_S_2500" },
+		{ name = "Carrera_S_3900" },
+		{ name = "Carrera_S_4000" },
+		{ name = "Carrera_S_5200" },
 	},
-
-	plugins = { "tachometer" },
 } :: types.VehicleConfig

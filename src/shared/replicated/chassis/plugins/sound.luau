@@ -3,7 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local soundsFolder = ReplicatedStorage:WaitForChild("sounds")
 local engineSounds = soundsFolder:WaitForChild("engine")
 
-local types = require(script.Parent:WaitForChild("types"))
+local types = require(script.Parent.Parent.types)
 
 local random = Random.new()
 
@@ -11,6 +11,7 @@ local random = Random.new()
 
 type SoundProto = {
 	config: types.VehicleConfig,
+	chassis: any,
 	root: Instance,
 	sounds: types.Sounds,
 	standardVolume: number,
@@ -20,12 +21,13 @@ local SoundPanel = {}
 SoundPanel.__index = SoundPanel
 export type SoundPanel = typeof(SoundPanel) & SoundProto
 
-function SoundPanel.new(root: Instance, config: types.VehicleConfig): SoundPanel
+function SoundPanel.new(_state: types.State, chassis: any): SoundPanel
 	local self = setmetatable({
-		config = config,
-		root = root,
+		config = chassis.config,
+		chassis = chassis,
+		root = chassis.root,
 		sounds = {},
-		standardVolume = config.standardVolume or 0.9,
+		standardVolume = 2,
 	} :: SoundProto, SoundPanel)
 
 	--
@@ -134,7 +136,7 @@ function SoundPanel.adjustPitch(self: SoundPanel, soundIndex: number | string, p
 	assert(sound, `Could not find sound at index '{soundIndex}'`)
 
 	local pitch = pitchN or if sound.pitch then random:NextNumber(sound.pitch.min, sound.pitch.max) else 1
-	sound.pitchEffect.Octave = pitch * (self.config.pitchScale or 1)
+	sound.pitchEffect.Octave = pitch -- * (self.config.pitchScale or 1)
 end
 
 function SoundPanel.adjustSpeed(self: SoundPanel, soundIndex: number | string, speedN: number)
@@ -142,7 +144,7 @@ function SoundPanel.adjustSpeed(self: SoundPanel, soundIndex: number | string, s
 	assert(sound, `Could not find sound at index '{soundIndex}'`)
 
 	local speed = speedN or if sound.speed then random:NextNumber(sound.speed.min, sound.speed.max) else 1
-	sound.object.PlaybackSpeed = speed * (self.config.speedScale or 1)
+	sound.object.PlaybackSpeed = speed -- * (self.config.speedScale or 1)
 end
 
 local function calculateFromRPM(normalizedRPM: number, min: number, max: number): number
@@ -152,19 +154,23 @@ local function calculateFromRPM(normalizedRPM: number, min: number, max: number)
 	return value
 end
 
-function SoundPanel.update(self: SoundPanel, state: types.ChassisState)
-	if not state.engineState then
+function SoundPanel.step(self: SoundPanel, state: types.State)
+	local engineState = state.engine
+	local engine = self.chassis:getComponent("engine")
+	local engineConfig = engine.config
+
+	if not engineState.isOn then
 		self:adjustAllVolumes(0)
 		return
 	end
 
 	-- forward sound blending
-	local rpm = state.rpm
-	local config = self.config
+	local rpm = engineState.currentRPM
 	local numSounds = #self.sounds
+	local idleRPM = engineConfig.idleRPM
+	local peakRPM = engineConfig.redlineRPM
 
-	local normalizedRPM = (math.clamp(rpm, config.idleRPM, config.peakRPM) - config.idleRPM)
-		/ (config.peakRPM - config.idleRPM)
+	local normalizedRPM = (math.clamp(rpm, idleRPM, peakRPM) - idleRPM) / (peakRPM - idleRPM)
 	local blendWeights = table.create(numSounds, 0)
 
 	if normalizedRPM ~= 0 then
@@ -203,7 +209,7 @@ function SoundPanel.update(self: SoundPanel, state: types.ChassisState)
 	end
 end
 
-function SoundPanel.destroy(self: SoundPanel)
+function SoundPanel.Destroy(self: SoundPanel)
 	for _, sound in self.sounds do
 		sound.object:Destroy()
 	end

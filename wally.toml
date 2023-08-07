@@ -6,6 +6,6 @@ realm = "shared"
 
 [dependencies]
 graphmodule = "boatbomber/graphmodule@1.0.0"
-plasma = "evaera/plasma@0.4.2"
-octo-tree = "sleitnick/octo-tree@0.3.1"
 fusion = "elttob/fusion@0.2.0"
+trove = "sleitnick/trove@1.0.0"
+iris = "xswezan/iris@2.0.5"
